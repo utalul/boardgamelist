@@ -837,8 +837,31 @@ function importList(e){
   e.target.value=''
 }
 
+/* ─── 自動載入試算表 ─── */
+const AUTO_SHEET_ID = '1BPez5r4NN3X47L0G54cCUeRxQQiNxpSZXs-9YiT8HK0'
+
+async function autoLoadSheet(){
+  const proxyUrl = `${WORKER_URL}?id=${AUTO_SHEET_ID}&gid=0`
+  try{
+    const res = await fetch(proxyUrl)
+    if(!res.ok) throw new Error(`HTTP ${res.status}`)
+    const text = await res.text()
+    const rows = parseCSV(text)
+    rows.shift()
+    const data = csvRowsToGames(rows)
+    if(data.length===0) throw new Error('沒有資料')
+    gameData = data
+    saveLocal()
+    renderAll()
+    toast(`✅ 已載入 ${data.length} 款桌遊`)
+  }catch(e){
+    console.error('自動載入失敗:', e)
+    loadLocal()
+  }
+}
+
 /* ─── INIT ─── */
-loadLocal()
+autoLoadSheet()
 </script>
 </body>
 </html>
