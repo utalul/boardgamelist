@@ -426,11 +426,6 @@ header h1 span{color:var(--accent)}
 
     <select id="categoryFilter" onchange="renderAll()">
       <option value="">所有分類</option>
-      <option>策略</option>
-      <option>家庭</option>
-      <option>派對</option>
-      <option>合作</option>
-      <option>重策</option>
     </select>
 
     <select id="statusFilter" onchange="renderAll()">
@@ -611,6 +606,21 @@ async function loadSheet(){
   }
 }
 
+/* ─── 動態分類選單 ─── */
+function renderCategoryFilter(){
+  const select = document.getElementById('categoryFilter')
+  const current = select.value
+  const categories = [...new Set(gameData.map(g=>g.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh'))
+  select.innerHTML = '<option value="">所有分類</option>'
+  categories.forEach(cat=>{
+    const opt = document.createElement('option')
+    opt.value = cat
+    opt.textContent = cat
+    if(cat===current) opt.selected = true
+    select.appendChild(opt)
+  })
+}
+
 /* ─── FILTER ─── */
 function getFiltered(){
   const kw  = document.getElementById('search').value.toLowerCase()
@@ -724,6 +734,7 @@ function renderCategoryChart(){
 }
 
 function renderAll(){
+  renderCategoryFilter()
   renderGames()
   renderStats()
   renderWeightChart()
