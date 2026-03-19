@@ -224,7 +224,7 @@ header h1 span{color:var(--accent)}
 .card-img{
   width:100%;
   height:160px;
-  object-fit:contain;
+  object-fit:cover;
   display:block;
   background:var(--surface2);
 }
@@ -256,32 +256,40 @@ header h1 span{color:var(--accent)}
 .badge.cat{background:rgba(100,160,255,.15);color:#7aadff;border:1px solid rgba(100,160,255,.3)}
 .badge.status{background:rgba(255,107,53,.12);color:#ff8a5b;border:1px solid rgba(255,107,53,.25)}
 .badge.best{background:rgba(76,200,100,.12);color:#6ecc82;border:1px solid rgba(76,200,100,.25)}
-.card-meta{font-size:11px;color:var(--muted);line-height:1.8}
-.card-img-wrap{position:relative}
-.card-tag{
-  position:absolute;
-  bottom:8px;
-  left:8px;
-  background:rgba(15,14,23,.72);
-  backdrop-filter:blur(4px);
-  color:#fff;
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.06em;
-  padding:3px 10px;
+.badge.tag{
+  background:linear-gradient(135deg,rgba(180,100,255,.18),rgba(100,180,255,.18));
+  color:#d4a8ff;
+  border:1px solid rgba(180,100,255,.4);
   border-radius:20px;
-  border:1.5px solid var(--accent2);
-  color:var(--accent2);
-  pointer-events:none;
+  padding:2px 9px;
+}
+.card-img{
+  width:100%;
+  height:180px;
+  object-fit:contain;
+  display:block;
+  background:var(--surface2);
+  padding:6px;
+}
+.card-img-placeholder{
+  width:100%;
+  height:180px;
+  background:linear-gradient(135deg,var(--surface2),var(--bg));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:2.5rem;
 }
 .card-notes{
   font-size:11px;
   color:var(--muted);
-  margin-top:8px;
-  line-height:1.6;
+  margin-top:6px;
+  line-height:1.5;
   border-top:1px solid var(--border);
   padding-top:6px;
+  font-style:italic;
 }
+.card-meta{font-size:11px;color:var(--muted);line-height:1.8}
 .card-rating{
   display:inline-block;
   background:var(--accent2);
@@ -683,37 +691,58 @@ function renderGames(){
   }
 
   data.forEach((g,i)=>{
-    const div = document.createElement('div')
-    div.className = 'card' + (i===randomIndex?' highlight':'')
+    const card = document.createElement('div')
+    card.className = 'card' + (i===randomIndex?' highlight':'')
 
-    let imgEl = g.image
-      ? `<img class="card-img" src="${g.image}" alt="${g.name}" onerror="this.outerHTML='<div class=card-img-placeholder>🎲</div>'">`
-      : `<div class="card-img-placeholder">🎲</div>`
+    // 圖片（用DOM建立，避免引號衝突）
+    const imgWrap = document.createElement('div')
+    if(g.image){
+      const img = document.createElement('img')
+      img.className = 'card-img'
+      img.alt = g.name
+      img.onerror = function(){
+        const ph = document.createElement('div')
+        ph.className = 'card-img-placeholder'
+        ph.textContent = '🎲'
+        this.replaceWith(ph)
+      }
+      img.src = g.image
+      imgWrap.appendChild(img)
+    } else {
+      const ph = document.createElement('div')
+      ph.className = 'card-img-placeholder'
+      ph.textContent = '🎲'
+      imgWrap.appendChild(ph)
+    }
+    card.appendChild(imgWrap)
 
-    const tagEl = g.tag ? `<div class="card-tag">${g.tag}</div>` : ''
-
+    // Badge
     let badges = ''
     if(g.category)    badges += `<span class="badge cat">${g.category}</span>`
     if(g.status)      badges += `<span class="badge status">${g.status}</span>`
     if(g.bestplayers) badges += `<span class="badge best">最佳${g.bestplayers}人</span>`
+    if(g.tag){
+      g.tag.split(/[,，]/).map(t=>t.trim()).filter(Boolean).forEach(t=>{
+        badges += `<span class="badge tag">${t}</span>`
+      })
+    }
 
-    div.innerHTML = `
-      <div class="card-img-wrap">
-        ${imgEl}
-        ${tagEl}
+    const notesEl = g.notes ? `<div class="card-notes">📝 ${g.notes}</div>` : ''
+
+    const body = document.createElement('div')
+    body.className = 'card-body'
+    body.innerHTML = `
+      <div class="card-name">${g.name}</div>
+      <div class="badges">${badges}</div>
+      <div class="card-meta">
+        👥 ${g.minplayers}–${g.maxplayers} 人<br>
+        ⏱ ${g.playtime} 分鐘<br>
+        🧠 複雜度 ${g.weight}
       </div>
-      <div class="card-body">
-        <div class="card-name">${g.name}</div>
-        <div class="badges">${badges}</div>
-        <div class="card-meta">
-          👥 ${g.minplayers}–${g.maxplayers} 人<br>
-          ⏱ ${g.playtime} 分鐘<br>
-          🧠 複雜度 ${g.weight}
-        </div>
-        <span class="card-rating">⭐ ${g.rating}</span>
-        ${g.notes ? `<div class="card-notes">📝 ${g.notes}</div>` : ''}
-      </div>`
-    container.appendChild(div)
+      <span class="card-rating">⭐ ${g.rating}</span>
+      ${notesEl}`
+    card.appendChild(body)
+    container.appendChild(card)
   })
 }
 
@@ -777,10 +806,14 @@ function renderAll(){
 
 /* ─── RANDOM GAME ─── */
 function randomGame(){
-  if(!gameData.length) return
-  randomIndex = Math.floor(Math.random()*gameData.length)
+  const filtered = getFiltered()
+  if(!filtered.length){ toast('目前篩選條件下沒有桌遊可抽選', true); return }
+  const pick = filtered[Math.floor(Math.random()*filtered.length)]
+  // 找出在filtered中的index對應到renderGames的位置
+  randomIndex = filtered.indexOf(pick)
   renderGames()
   document.querySelector('.card.highlight')?.scrollIntoView({behavior:'smooth',block:'center'})
+  toast(`🎲 今天玩：${pick.name}`)
 }
 
 /* ─── WHEEL ─── */
@@ -799,19 +832,21 @@ function drawWheel(){
   const cx=180, cy=180, r=170
   ctx.clearRect(0,0,360,360)
 
-  if(!gameData.length){
+  const filtered = getFiltered()
+
+  if(!filtered.length){
     ctx.fillStyle='#1e1c30'
     ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI); ctx.fill()
     ctx.fillStyle='#a7a9be'
     ctx.font='14px Space Mono,monospace'
     ctx.textAlign='center'; ctx.textBaseline='middle'
-    ctx.fillText('載入資料後', cx, cy-10)
-    ctx.fillText('輪盤將出現', cx, cy+10)
+    ctx.fillText(gameData.length===0?'載入資料後':'無符合條件', cx, cy-10)
+    ctx.fillText(gameData.length===0?'輪盤將出現':'的桌遊', cx, cy+10)
     return
   }
 
-  const slice = 2*Math.PI/gameData.length
-  for(let i=0;i<gameData.length;i++){
+  const slice = 2*Math.PI/filtered.length
+  for(let i=0;i<filtered.length;i++){
     const [bg,fg] = COLORS[i%COLORS.length]
     ctx.beginPath()
     ctx.moveTo(cx,cy)
@@ -823,9 +858,9 @@ function drawWheel(){
     ctx.translate(cx,cy)
     ctx.rotate(wheelAngle+i*slice+slice/2)
     ctx.fillStyle=fg
-    ctx.font=`bold ${gameData.length>10?10:13}px Noto Serif TC,serif`
+    ctx.font=`bold ${filtered.length>10?10:13}px Noto Serif TC,serif`
     ctx.textBaseline='middle'
-    ctx.fillText(gameData[i].name.substring(0,10), r*0.45, 0)
+    ctx.fillText(filtered[i].name.substring(0,10), r*0.45, 0)
     ctx.restore()
   }
   // 指針
@@ -839,11 +874,12 @@ function drawWheel(){
 }
 
 function spinWheel(){
-  if(!gameData.length||isSpinning) return
+  const filtered = getFiltered()
+  if(!filtered.length||isSpinning) return
   isSpinning=true
   document.getElementById('wheelResult').textContent=''
   const totalSteps = 60+Math.floor(Math.random()*40)
-  const slice = 2*Math.PI/gameData.length
+  const slice = 2*Math.PI/filtered.length
   let step=0
 
   const timer=setInterval(()=>{
@@ -853,9 +889,10 @@ function spinWheel(){
     drawWheel()
     if(step>=totalSteps){
       clearInterval(timer); isSpinning=false
+      const filtered2 = getFiltered()
       let na = ((2*Math.PI)-(wheelAngle%(2*Math.PI))) % (2*Math.PI)
-      const idx = Math.floor(na/slice)%gameData.length
-      document.getElementById('wheelResult').textContent = '🎉 今天玩：'+gameData[idx].name
+      const idx = Math.floor(na/slice)%filtered2.length
+      document.getElementById('wheelResult').textContent = '🎉 今天玩：'+filtered2[idx].name
     }
   },30)
 }
@@ -885,21 +922,26 @@ function importList(e){
 const AUTO_SHEET_ID = '1BPez5r4NN3X47L0G54cCUeRxQQiNxpSZXs-9YiT8HK0'
 
 async function autoLoadSheet(){
+  toast('⏳ 載入桌遊清單中…')
   const proxyUrl = `${WORKER_URL}?id=${AUTO_SHEET_ID}&gid=0`
   try{
     const res = await fetch(proxyUrl)
-    if(!res.ok) throw new Error(`HTTP ${res.status}`)
     const text = await res.text()
+    // 檢查是否被導向到登入頁（Google有時會回傳HTML）
+    if(text.trim().startsWith('<')) throw new Error('試算表未設定公開權限，請設為「知道連結的任何人可檢視」')
+    if(!res.ok) throw new Error(`伺服器回應錯誤 HTTP ${res.status}`)
     const rows = parseCSV(text)
+    if(rows.length<=1) throw new Error('試算表沒有資料列')
     rows.shift()
     const data = csvRowsToGames(rows)
-    if(data.length===0) throw new Error('沒有資料')
+    if(data.length===0) throw new Error('解析後沒有有效資料')
     gameData = data
     saveLocal()
     renderAll()
     toast(`✅ 已載入 ${data.length} 款桌遊`)
   }catch(e){
     console.error('自動載入失敗:', e)
+    toast(`⚠️ ${e.message}`, true)
     loadLocal()
   }
 }
