@@ -256,12 +256,28 @@ header h1 span{color:var(--accent)}
 .badge.cat{background:rgba(100,160,255,.15);color:#7aadff;border:1px solid rgba(100,160,255,.3)}
 .badge.status{background:rgba(255,107,53,.12);color:#ff8a5b;border:1px solid rgba(255,107,53,.25)}
 .badge.best{background:rgba(76,200,100,.12);color:#6ecc82;border:1px solid rgba(76,200,100,.25)}
-.badge.tag{
-  background:linear-gradient(135deg,rgba(180,100,255,.18),rgba(100,180,255,.18));
-  color:#d4a8ff;
-  border:1px solid rgba(180,100,255,.4);
+.card-meta{font-size:11px;color:var(--muted);line-height:1.8}
+.card-img-wrap{position:relative}
+.card-tags{
+  position:absolute;
+  bottom:8px;
+  left:6px;
+  right:6px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  pointer-events:none;
+}
+.card-tag{
+  background:rgba(15,14,23,.75);
+  backdrop-filter:blur(4px);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.06em;
+  padding:3px 10px;
   border-radius:20px;
-  padding:2px 9px;
+  border:1.5px solid var(--accent2);
+  color:var(--accent2);
 }
 .card-img{
   width:100%;
@@ -289,7 +305,6 @@ header h1 span{color:var(--accent)}
   padding-top:6px;
   font-style:italic;
 }
-.card-meta{font-size:11px;color:var(--muted);line-height:1.8}
 .card-rating{
   display:inline-block;
   background:var(--accent2);
@@ -717,16 +732,25 @@ function renderGames(){
     }
     card.appendChild(imgWrap)
 
-    // Badge
+    // tag 浮層（疊在圖片上）
+    if(g.tag){
+      imgWrap.className = 'card-img-wrap'
+      const tagsDiv = document.createElement('div')
+      tagsDiv.className = 'card-tags'
+      g.tag.split(/[,，]/).map(t=>t.trim()).filter(Boolean).forEach(t=>{
+        const span = document.createElement('span')
+        span.className = 'card-tag'
+        span.textContent = t
+        tagsDiv.appendChild(span)
+      })
+      imgWrap.appendChild(tagsDiv)
+    }
+
+    // Badge（不含tag）
     let badges = ''
     if(g.category)    badges += `<span class="badge cat">${g.category}</span>`
     if(g.status)      badges += `<span class="badge status">${g.status}</span>`
     if(g.bestplayers) badges += `<span class="badge best">最佳${g.bestplayers}人</span>`
-    if(g.tag){
-      g.tag.split(/[,，]/).map(t=>t.trim()).filter(Boolean).forEach(t=>{
-        badges += `<span class="badge tag">${t}</span>`
-      })
-    }
 
     const notesEl = g.notes ? `<div class="card-notes">📝 ${g.notes}</div>` : ''
 
