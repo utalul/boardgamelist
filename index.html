@@ -487,11 +487,11 @@ header h1 span{color:var(--accent)}
 
 <!-- STATS -->
 <div class="stats-bar" id="statsBar" style="display:none">
-  <div class="stat-item"><div class="stat-value" id="statCount">0</div><div class="stat-label">款桌遊</div></div>
+  <div class="stat-item"><div class="stat-value" id="statCount">—</div><div class="stat-label">款桌遊</div></div>
   <div class="stat-item"><div class="stat-value" id="statRating">—</div><div class="stat-label">平均評分</div></div>
   <div class="stat-item"><div class="stat-value" id="statWeight">—</div><div class="stat-label">平均複雜度</div></div>
-  <div class="stat-item"><div class="stat-value" id="statCollected">0</div><div class="stat-label">已收藏</div></div>
-  <div class="stat-item"><div class="stat-value" id="statWishlist">0</div><div class="stat-label">想玩清單</div></div>
+  <div class="stat-item"><div class="stat-value" id="statCollected">—</div><div class="stat-label">已收藏</div></div>
+  <div class="stat-item"><div class="stat-value" id="statWishlist">—</div><div class="stat-label">想玩清單</div></div>
 </div>
 
 <!-- GAME GRID -->
@@ -751,11 +751,12 @@ function renderStats(){
   const bar = document.getElementById('statsBar')
   if(gameData.length===0){ bar.style.display='none'; return }
   bar.style.display='flex'
-  document.getElementById('statCount').textContent = gameData.length
-  document.getElementById('statRating').textContent = (gameData.reduce((a,b)=>a+b.rating,0)/gameData.length).toFixed(1)
-  document.getElementById('statWeight').textContent = (gameData.reduce((a,b)=>a+b.weight,0)/gameData.length).toFixed(1)
-  document.getElementById('statCollected').textContent = gameData.filter(g=>g.status==='收藏').length
-  document.getElementById('statWishlist').textContent  = gameData.filter(g=>g.status==='想玩').length
+  const d = getFiltered()
+  document.getElementById('statCount').textContent = d.length
+  document.getElementById('statRating').textContent = d.length ? (d.reduce((a,b)=>a+b.rating,0)/d.length).toFixed(1) : '—'
+  document.getElementById('statWeight').textContent = d.length ? (d.reduce((a,b)=>a+b.weight,0)/d.length).toFixed(1) : '—'
+  document.getElementById('statCollected').textContent = d.filter(g=>g.status==='收藏').length
+  document.getElementById('statWishlist').textContent  = d.filter(g=>g.status==='想玩').length
 }
 
 /* ─── RENDER WEIGHT CHART ─── */
